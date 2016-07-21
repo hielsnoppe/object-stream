@@ -1,4 +1,5 @@
 var stream = require('stream');
+var util = require('util');
 
 exports.fromArray = function (array) {
 
