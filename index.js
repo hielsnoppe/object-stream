@@ -1,16 +1,54 @@
 var stream = require('stream');
 
 exports.fromArray = function (array) {
-  var readable = new stream.Readable({ objectMode: true });
-  var index = -1;
-  readable._read = function () {
-    if (array && index < array.length) {
-      readable.push(array[++index]);
-    } else {
-      readable.push(null);
-    }
-  };
-  return readable;
+
+  if (Array.isArray(array)) {
+
+    var readable = new stream.Readable({ objectMode: true });
+    var index = -1;
+
+    readable._read = function () {
+
+      if (array && index < array.length) {
+
+        readable.push(array[++index]);
+      }
+      else {
+
+        readable.push(null);
+      }
+    };
+
+    return readable;
+  }
+  else {
+
+    var transform = new stream.Transform();
+
+    transform._readableState.objectMode = true;
+    transform._writableState.objectMode = true;
+
+    transform._transform = function (obj, encoding, next) {
+
+      if (Array.isArray(chunk)) {
+
+        var self = this;
+
+        chunk.forEach(function (item) {
+
+          self.push(item);
+        });
+      }
+      else {
+
+        this.push(chunk);
+      }
+
+      next();
+    };
+
+    return transform;
+  }
 };
 
 exports.map = function (iterator) {
@@ -61,4 +99,43 @@ exports.toArray = function (callback) {
   }).once('error', function (err) {
     callback && callback(err);
   });
+};
+
+exports.collect = function (chunkSize) {
+
+  return new ItemCollector(chunkSize);
+};
+
+/**
+ *
+ */
+
+function ItemCollector (chunkSize) {
+
+  this._buffer = [];
+  this._chunkSize = chunkSize;
+
+  stream.Transform.call(this, { objectMode: true });
+}
+
+util.inherits(ItemCollector, stream.Transform);
+
+ItemCollector.prototype._transform = function (chunk, encoding, done) {
+
+  var out = [];
+
+  if (this._buffer.length == this._chunkSize) {
+
+    this.push(this._buffer);
+    this._buffer = [];
+  }
+
+  this._buffer.push(chunk);
+
+  done();
+};
+
+ItemCollector.prototype._flush = function () {
+
+  this.push(this._buffer);
 };
