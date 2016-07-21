@@ -31,18 +31,18 @@ exports.fromArray = function (array) {
 
     transform._transform = function (obj, encoding, next) {
 
-      if (Array.isArray(chunk)) {
+      if (Array.isArray(obj)) {
 
         var self = this;
 
-        chunk.forEach(function (item) {
+        obj.forEach(function (item) {
 
           self.push(item);
         });
       }
       else {
 
-        this.push(chunk);
+        this.push(obj);
       }
 
       next();
@@ -122,8 +122,6 @@ function ItemCollector (chunkSize) {
 util.inherits(ItemCollector, stream.Transform);
 
 ItemCollector.prototype._transform = function (chunk, encoding, done) {
-
-  var out = [];
 
   if (this._buffer.length == this._chunkSize) {
 
